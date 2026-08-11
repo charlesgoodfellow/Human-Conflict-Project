@@ -14,13 +14,13 @@ BASE = os.environ.get('BASE_PATH', '').rstrip('/')
 DIST = os.path.join(ROOT, 'dist')
 TODAY = datetime.date.today().isoformat()
 
-EVENTS = json.load(open(os.path.join(ROOT, 'data/events.json')))
+EVENTS = json.load(open(os.path.join(ROOT, 'data/events.json'), encoding='utf-8'))
 WORLD_PATH = os.path.join(ROOT, 'data/world.json')
 D3_PATH = os.path.join(ROOT, 'vendor/d3.min.js')
 
-CSS = open(os.path.join(ROOT, 'src/app.css')).read()
-BODY = open(os.path.join(ROOT, 'src/body.html')).read()
-APPJS = open(os.path.join(ROOT, 'src/app.js')).read()
+CSS = open(os.path.join(ROOT, 'src/app.css'), encoding='utf-8').read()
+BODY = open(os.path.join(ROOT, 'src/body.html'), encoding='utf-8').read()
+APPJS = open(os.path.join(ROOT, 'src/app.js'), encoding='utf-8').read()
 
 TYPE_LABEL = {'displacement': 'Forced displacement', 'territory': 'Territory seized',
               'both': 'Territory and displacement', 'confinement': 'Population confined in place'}
@@ -195,9 +195,9 @@ for d in ['assets', 'events', 'data']:
 # assets
 shutil.copy(D3_PATH, os.path.join(DIST, 'assets/d3.min.js'))
 shutil.copy(WORLD_PATH, os.path.join(DIST, 'assets/world.json'))
-open(os.path.join(DIST, 'assets/app.css'), 'w').write(CSS)
-open(os.path.join(DIST, 'assets/site.css'), 'w').write(SITE_CSS.strip())
-open(os.path.join(DIST, 'assets/app.js'), 'w').write(
+open(os.path.join(DIST, 'assets/app.css'), 'w', encoding='utf-8', newline='').write(CSS)
+open(os.path.join(DIST, 'assets/site.css'), 'w', encoding='utf-8', newline='').write(SITE_CSS.strip())
+open(os.path.join(DIST, 'assets/app.js'), 'w', encoding='utf-8', newline='').write(
     "/* Redrawn — application. CC BY 4.0. */\nfunction startApp(WORLD, EVENTS){\n" + APPJS + "\n}\n")
 
 # runtime data (strip derived fields that the app recomputes, keep the rest)
@@ -205,10 +205,10 @@ runtime = []
 for e in EVENTS:
     o = {k: v for k, v in e.items() if k != '_search'}
     runtime.append(o)
-open(os.path.join(DIST, 'assets/events.json'), 'w').write(json.dumps(runtime, ensure_ascii=False, separators=(',', ':')))
+open(os.path.join(DIST, 'assets/events.json'), 'w', encoding='utf-8', newline='').write(json.dumps(runtime, ensure_ascii=False, separators=(',', ':')))
 
 # public dataset copies
-open(os.path.join(DIST, 'data/redrawn-events.json'), 'w').write(
+open(os.path.join(DIST, 'data/redrawn-events.json'), 'w', encoding='utf-8', newline='').write(
     json.dumps({'name': 'Redrawn', 'license': 'CC BY 4.0', 'generated': TODAY,
                 'count': len(EVENTS), 'events': runtime}, ensure_ascii=False, indent=1))
 CSVCOLS = ['id','title','startYear','endYear','dateApprox','type','region','actors','peopleDisplaced','peopleRange',
@@ -224,7 +224,7 @@ for e in EVENTS:
             v = ' | '.join(x['title'] + ' <' + x['url'] + '>' if isinstance(x, dict) else str(x) for x in v)
         row.append('' if v is None else v)
     w.writerow(row)
-open(os.path.join(DIST, 'data/redrawn-events.csv'), 'w').write(buf.getvalue())
+open(os.path.join(DIST, 'data/redrawn-events.csv'), 'w', encoding='utf-8', newline='').write(buf.getvalue())
 
 # static passthrough (host configs, .nojekyll) and licence
 _static = os.path.join(ROOT, 'static')
@@ -306,7 +306,7 @@ app_head = f"""<!DOCTYPE html>
 </head>
 <body>
 """
-open(os.path.join(DIST, 'index.html'), 'w').write(app_head + BODY + LOADER + "\n</body>\n</html>\n")
+open(os.path.join(DIST, 'index.html'), 'w', encoding='utf-8', newline='').write(app_head + BODY + LOADER + "\n</body>\n</html>\n")
 
 # ---------------------------------------------------------------- event pages
 by_id = {e['id']: e for e in EVENTS}
@@ -319,6 +319,14 @@ def shape_cls(t):
 def dot_style(t):
     if t == 'confinement': return 'background:transparent;border:1.5px dashed var(--s4)'
     return 'background:' + {'displacement': 'var(--s1)', 'territory': 'var(--s2)', 'both': 'var(--s3)'}[t]
+
+def source_items(srcs):
+    """One <li> per citation, tier badge included where the source carries one."""
+    out = []
+    for s in (srcs or []):
+        t = f'<span class="tier {s.get("tier","")}">{TIER_SHORT.get(s.get("tier"), "")}</span>' if s.get('tier') else ''
+        out.append(f'<li><a href="{esc(s["url"])}" rel="nofollow noopener">{esc(s["title"])}</a>{t}</li>')
+    return out
 
 def event_page(e):
     i = pos[e['id']]
@@ -375,10 +383,15 @@ def event_page(e):
     a(f'<p>{esc(e.get("actors") or "")}</p>')
     if e.get('contested'):
         a('<h3>Disputed</h3>'); a(f'<div class="note">{esc(e["contested"])}</div>')
-    if e.get('baselineNote') or e.get('shareCaveat'):
+    if e.get('baselineNote') or e.get('shareCaveat') or e.get('baselineSources'):
         a('<h3>The denominator</h3>')
         if e.get('baselineNote'): a(f'<p>{esc(e["baselineNote"])}</p>')
         if e.get('shareCaveat'): a(f'<div class="note">{esc(e["shareCaveat"])}</div>')
+        if e.get('baselineSources'):
+            a('<h3>Where the baseline comes from</h3>')
+            a('<ul class="plain">')
+            h.extend(source_items(e['baselineSources']))
+            a('</ul>')
     if e.get('deathsNote'):
         a('<h3>On the death toll</h3>'); a(f'<p>{esc(e["deathsNote"])}</p>')
     if e.get('violenceForms'):
@@ -406,12 +419,8 @@ def event_page(e):
     if e.get('weakSources'):
         a('<div class="note grey">This entry rests only on reference, press or open-edited sources. Treat its figures as indicative and follow the links before relying on them.</div>')
     a('<ul class="plain">')
-    for s in (e.get('sources') or []):
-        t = f'<span class="tier {s.get("tier","")}">{TIER_SHORT.get(s.get("tier"), "")}</span>' if s.get('tier') else ''
-        a(f'<li><a href="{esc(s["url"])}" rel="nofollow noopener">{esc(s["title"])}</a>{t}</li>')
+    h.extend(source_items(e.get('sources')))
     a('</ul>')
-    for b in (e.get('baselineSources') or []):
-        pass
 
     a('<div class="pager">')
     if prev: a(f'<a href="/{slugpath(prev["id"])}"><span class="lbl">← Earlier</span>{esc(prev["title"])}</a>')
@@ -424,7 +433,7 @@ def event_page(e):
     return '\n'.join(h)
 
 for e in EVENTS:
-    open(os.path.join(DIST, slugpath(e['id'])), 'w').write(event_page(e))
+    open(os.path.join(DIST, slugpath(e['id'])), 'w', encoding='utf-8', newline='').write(event_page(e))
 
 # ---------------------------------------------------------------- events index
 def events_index():
@@ -447,7 +456,7 @@ def events_index():
     h.append(FOOT)
     return '\n'.join(h)
 
-open(os.path.join(DIST, 'events/index.html'), 'w').write(events_index())
+open(os.path.join(DIST, 'events/index.html'), 'w', encoding='utf-8', newline='').write(events_index())
 
 # ---------------------------------------------------------------- about + data pages
 def about_page():
@@ -499,7 +508,7 @@ def about_page():
     h.append(FOOT)
     return '\n'.join(h)
 
-open(os.path.join(DIST, 'about.html'), 'w').write(about_page())
+open(os.path.join(DIST, 'about.html'), 'w', encoding='utf-8', newline='').write(about_page())
 
 def data_page():
     jb = os.path.getsize(os.path.join(DIST, 'data/redrawn-events.json')) // 1024
@@ -529,16 +538,16 @@ def data_page():
     h.append(FOOT)
     return '\n'.join(h)
 
-open(os.path.join(DIST, 'data/index.html'), 'w').write(data_page())
+open(os.path.join(DIST, 'data/index.html'), 'w', encoding='utf-8', newline='').write(data_page())
 
 # 404
-open(os.path.join(DIST, '404.html'), 'w').write(
+open(os.path.join(DIST, '404.html'), 'w', encoding='utf-8', newline='').write(
     head("Not found — Redrawn", "That page does not exist.", "404.html") +
     '<div class="wrap"><h1>Not found</h1><p>That page does not exist. Try <a href="/">the map</a>, '
     '<a href="/events/">the full index of events</a>, or <a href="/about.html">the method page</a>.</p></div>' + FOOT)
 
 # favicon
-open(os.path.join(DIST, 'assets/favicon.svg'), 'w').write(
+open(os.path.join(DIST, 'assets/favicon.svg'), 'w', encoding='utf-8', newline='').write(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
     '<rect width="32" height="32" rx="7" fill="#161618"/>'
     '<circle cx="12" cy="13" r="5" fill="#3987e5" fill-opacity=".5" stroke="#3987e5" stroke-width="1.6"/>'
@@ -553,8 +562,8 @@ for u in urls:
     pri = '1.0' if u == '' else ('0.8' if u in ('events/', 'about.html', 'data/') else '0.6')
     sm.append(f'<url><loc>{SITE_URL}/{u}</loc><lastmod>{TODAY}</lastmod><priority>{pri}</priority></url>')
 sm.append('</urlset>')
-open(os.path.join(DIST, 'sitemap.xml'), 'w').write('\n'.join(sm))
-open(os.path.join(DIST, 'robots.txt'), 'w').write(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n")
+open(os.path.join(DIST, 'sitemap.xml'), 'w', encoding='utf-8', newline='').write('\n'.join(sm))
+open(os.path.join(DIST, 'robots.txt'), 'w', encoding='utf-8', newline='').write(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n")
 
 # ------------------------------------------------- rewrite root-absolute paths for BASE_PATH
 if BASE:
@@ -568,7 +577,7 @@ if BASE:
         if not f.endswith(('.html', '.css', '.js', '.xml', '.webmanifest')): continue
         t = open(f, encoding='utf-8').read(); o = t
         for rx, rep in pat: t = rx.sub(rep, t)
-        if t != o: open(f, 'w', encoding='utf-8').write(t); n += 1
+        if t != o: open(f, 'w', encoding='utf-8', newline='').write(t); n += 1
     print(f"rewrote {n} files for BASE_PATH={BASE}")
 
 print(f"built {len(EVENTS)} event pages into {DIST}")
