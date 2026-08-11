@@ -1,0 +1,25 @@
+Redrawn — an atlas of territory seized, populations displaced, confined and killed
+
+The text and data in this work are licensed under the Creative Commons
+Attribution 4.0 International Licence (CC BY 4.0).
+
+You are free to share and adapt the material for any purpose, including
+commercially, provided you give appropriate credit, link to the licence, and
+indicate if changes were made.
+
+Full licence text: https://creativecommons.org/licenses/by/4.0/legalcode
+Human-readable summary: https://creativecommons.org/licenses/by/4.0/
+
+Suggested attribution:
+  "Redrawn — an atlas of territory seized, populations displaced, confined and
+   killed", CC BY 4.0.
+
+Each entry cites its own sources. Those sources carry their own rights and
+licences; this licence covers the compilation, the written summaries and the
+structured data, not the underlying works cited.
+
+THIRD-PARTY COMPONENTS
+  d3 (vendor/d3.min.js) — ISC Licence, (c) Mike Bostock.
+    https://github.com/d3/d3/blob/main/LICENSE
+  Coastline geometry derived from Natural Earth (public domain), via the
+    world-atlas project. https://www.naturalearthdata.com/about/terms-of-use/
