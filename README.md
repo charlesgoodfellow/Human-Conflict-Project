@@ -17,7 +17,7 @@ The site is static: no server, no database, no build tooling beyond Python 3.
 1. Push to `main`.
 2. Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 
-That's it. `.github/workflows/deploy.yml` builds and publishes on every push, and works out the correct URLs by itself — GitHub tells the workflow both the site URL and the `/Human-Project/` subpath, which the build bakes into every link, the sitemap and the social tags.
+That's it. `.github/workflows/deploy.yml` builds and publishes on every push, and works out the correct URLs by itself — GitHub tells the workflow both the site URL and the `/Human-Conflict-Project/` subpath, which the build bakes into every link, the sitemap and the social tags.
 
 **Anywhere else**
 
@@ -84,7 +84,7 @@ Some cautions travel with the data, and the site states them too:
 - **A form of violence absent from an entry means no consulted source documents it** — not that it did not happen.
 - **Population shares above 100%** are real, not errors: a registered-refugee population that grows by descent, or a numerator counting incidents rather than people. Those show as a multiple, with a caveat.
 
-The [method page](https://creativecommons.org/licenses/by/4.0/) — `about.html` in the built site — is the long version.
+The method page — `about.html` in the built site — is the long version.
 
 ---
 
