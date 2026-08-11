@@ -1,0 +1,32 @@
+# Serves the built site. The host terminates TLS and routes to $PORT, so Caddy
+# listens on plain HTTP and does not manage certificates itself.
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+:{$PORT:8080} {
+	root * /srv
+	encode zstd gzip
+
+	# Extensionless URLs (/about) resolve to /about.html; directories fall
+	# through to their index.html.
+	try_files {path} {path}.html {path}/index.html
+	file_server
+
+	# The dataset doubles as a small read-only API, and world.json is immutable.
+	@immutable path /assets/world.json /assets/d3.min.js
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	@data path /assets/events.json /data/*
+	header @data {
+		Cache-Control "public, max-age=3600, must-revalidate"
+		Access-Control-Allow-Origin "*"
+	}
+
+	handle_errors {
+		rewrite * /404.html
+		file_server
+	}
+}
